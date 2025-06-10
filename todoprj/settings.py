@@ -29,7 +29,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://todo-django-render.onrender.com',
+    'https://todo-django-priyadarshini.onrender.com',
 ]
 
 
