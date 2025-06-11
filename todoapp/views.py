@@ -1,5 +1,6 @@
 import random
 import re
+from django.core.mail import EmailMessage
 from django.core.mail import send_mail
 from django.shortcuts import render,redirect
 from django.contrib.auth.models import User
@@ -103,7 +104,7 @@ def Update(request,name):
 
 otp_store = {}
 
-def request_otp_view(request):
+def request_otp_view(request): 
     if request.method == 'POST':
         email = request.POST['email']
         try:
@@ -111,13 +112,16 @@ def request_otp_view(request):
             otp = str(random.randint(100000, 999999))
             otp_store[email] = otp
 
-            send_mail(
-                'Your OTP for Password Reset',
-                f'Your OTP is: {otp}',
-                'darshini.devi8603@gmail.com', 
-                [email],
-                fail_silently=False,
+            email_msg = EmailMessage(
+                subject='🔒 Your OTP for Password Reset',
+                body=f'Your OTP is: {otp}',
+                from_email='darshini.devi8603@gmail.com',
+                to=[email]
             )
+            email_msg.content_subtype = 'plain'
+            email_msg.encoding = 'utf-8'
+            email_msg.send(fail_silently=False)
+
             messages.success(request, 'OTP sent to your email.')
             return render(request, 'todoapp/verify_otp.html', {'email': email})
         except User.DoesNotExist:
@@ -126,10 +130,6 @@ def request_otp_view(request):
 
     return render(request, 'todoapp/reset_password_request.html')
 
-import re
-from django.contrib import messages
-from django.contrib.auth.models import User
-from django.shortcuts import render, redirect
 
 def verify_otp_view(request):
     if request.method == 'POST':
@@ -137,7 +137,6 @@ def verify_otp_view(request):
         entered_otp = request.POST['otp']
         new_password = request.POST['new_password']
 
-        # --- Password Constraints ---
         if len(new_password) < 8:
             messages.error(request, 'Password must be at least 8 characters long.')
             return render(request, 'todoapp/verify_otp.html', {'email': email})
@@ -158,7 +157,6 @@ def verify_otp_view(request):
             messages.error(request, 'Password must contain at least one special character.')
             return render(request, 'todoapp/verify_otp.html', {'email': email})
 
-        # --- OTP Verification ---
         original_otp = otp_store.get(email)
         if original_otp == entered_otp:
             try:
