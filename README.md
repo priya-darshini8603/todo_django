@@ -2,8 +2,6 @@
 
 A simple and elegant To-Do web app built using Django. It includes user authentication (registration and login), task management (add, delete, mark complete), and validations (no empty or duplicate tasks).
 
-
-
 ## 🚀 Features
 
 - User Registration & Login  
@@ -12,9 +10,7 @@ A simple and elegant To-Do web app built using Django. It includes user authenti
 - Task List Filtered by Logged-in User  
 - Bootstrap UI Styling  
 - Alerts with Django Messages Framework  
-- Deployed on Render  
-
-
+- Deployed on Render → [https://todo-django-priyadarshini.onrender.com](https://todo-django-priyadarshini.onrender.com)
 
 ## 🔧 Tech Stack
 
