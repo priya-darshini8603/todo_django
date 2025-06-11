@@ -1,10 +1,11 @@
 # 📝 Django To-Do App
 
-A simple and elegant To-Do web app built using Django. It includes user authentication (registration and login), task management (add, delete, mark complete), and validations (no empty or duplicate tasks).
+A simple and elegant To-Do web app built using Django. It includes user authentication (registration and login), OTP-based password reset , task management (add, delete, mark complete), and validations (no empty or duplicate tasks).
 
 ## 🚀 Features
 
 - User Registration & Login  
+- Password Reset via OTP (with strong constraints)  
 - Add, Delete, and Mark Tasks as Completed  
 - Prevent Duplicate or Empty Tasks  
 - Task List Filtered by Logged-in User  
