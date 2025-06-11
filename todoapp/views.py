@@ -1,3 +1,6 @@
+import random
+import re
+from django.core.mail import send_mail
 from django.shortcuts import render,redirect
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate,login,logout
@@ -25,28 +28,46 @@ def home(request):
     }
     return render(request, 'todoapp/todo.html', context)
 
-
 def register(request):
-    if request.method=='POST':
-        username=request.POST.get('username') #AS IN HTML NAME FIELD
-        email=request.POST.get('email')
-        password=request.POST.get('password')
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
         
-        if len(password) < 3 :
-            messages.error(request,'Password must be atleast 3 characters')
+        if len(password) < 8:
+            messages.error(request, 'Password must be at least 8 characters long.')
             return redirect('register')
-        
-        # Restrict if user already exists
-        get_users_by_username=User.objects.filter(username=username) #match username with database stored username
-        if get_users_by_username:
-            messages.error(request,'Error , username already exists')
+
+        if not re.search(r'[A-Z]', password):
+            messages.error(request, 'Password must contain at least one uppercase letter.')
             return redirect('register')
-        
-        newUser=User.objects.create_user(username=username,email=email,password=password) #create and save in database
+
+        if not re.search(r'[a-z]', password):
+            messages.error(request, 'Password must contain at least one lowercase letter.')
+            return redirect('register')
+
+        if not re.search(r'[0-9]', password):
+            messages.error(request, 'Password must contain at least one digit.')
+            return redirect('register')
+
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+            messages.error(request, 'Password must contain at least one special character.')
+            return redirect('register')
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, 'Username already exists.')
+            return redirect('register')
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, 'Email already exists.')
+            return redirect('register')
+
+        newUser = User.objects.create_user(username=username, email=email, password=password)
         newUser.save()
-        messages.success(request,'User successfully created.')
-        
-    return render(request,'todoapp/register.html',{})
+        messages.success(request, 'User successfully created.')
+        return redirect('login')  
+
+    return render(request, 'todoapp/register.html')
 
 def loginpage(request):
     if request.method == 'POST':
@@ -79,3 +100,78 @@ def Update(request,name):
     get_todo.status=True
     get_todo.save()
     return redirect('home-page')
+
+otp_store = {}
+
+def request_otp_view(request):
+    if request.method == 'POST':
+        email = request.POST['email']
+        try:
+            user = User.objects.get(email=email)
+            otp = str(random.randint(100000, 999999))
+            otp_store[email] = otp
+
+            send_mail(
+                'Your OTP for Password Reset',
+                f'Your OTP is: {otp}',
+                'darshini.devi8603@gmail.com', 
+                [email],
+                fail_silently=False,
+            )
+            messages.success(request, 'OTP sent to your email.')
+            return render(request, 'todoapp/verify_otp.html', {'email': email})
+        except User.DoesNotExist:
+            messages.error(request, 'No account associated with that email.')
+            return redirect('request_otp')
+
+    return render(request, 'todoapp/reset_password_request.html')
+
+import re
+from django.contrib import messages
+from django.contrib.auth.models import User
+from django.shortcuts import render, redirect
+
+def verify_otp_view(request):
+    if request.method == 'POST':
+        email = request.POST['email']
+        entered_otp = request.POST['otp']
+        new_password = request.POST['new_password']
+
+        # --- Password Constraints ---
+        if len(new_password) < 8:
+            messages.error(request, 'Password must be at least 8 characters long.')
+            return render(request, 'todoapp/verify_otp.html', {'email': email})
+
+        if not re.search(r'[A-Z]', new_password):
+            messages.error(request, 'Password must contain at least one uppercase letter.')
+            return render(request, 'todoapp/verify_otp.html', {'email': email})
+
+        if not re.search(r'[a-z]', new_password):
+            messages.error(request, 'Password must contain at least one lowercase letter.')
+            return render(request, 'todoapp/verify_otp.html', {'email': email})
+
+        if not re.search(r'[0-9]', new_password):
+            messages.error(request, 'Password must contain at least one digit.')
+            return render(request, 'todoapp/verify_otp.html', {'email': email})
+
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_password):
+            messages.error(request, 'Password must contain at least one special character.')
+            return render(request, 'todoapp/verify_otp.html', {'email': email})
+
+        # --- OTP Verification ---
+        original_otp = otp_store.get(email)
+        if original_otp == entered_otp:
+            try:
+                user = User.objects.get(email=email)
+                user.set_password(new_password)
+                user.save()
+                otp_store.pop(email, None)
+                messages.success(request, 'Password reset successfully.')
+                return redirect('login')
+            except User.DoesNotExist:
+                messages.error(request, 'User does not exist.')
+        else:
+            messages.error(request, 'Invalid OTP.')
+            return render(request, 'todoapp/verify_otp.html', {'email': email})
+
+    return redirect('request_otp')
